@@ -195,6 +195,7 @@ def create_training_setup(config: dict, wandb_logger) -> dict:
         )
 
         for i in range(1, config["n_envs"] + 1):
+            print(f"sim_{i=}")
             task_managers[f"sim_{i}"].set_obstacle_manager(
                 obstacle_manager_dict[f"sim_{i}"]
             )

@@ -55,6 +55,10 @@ class ABSMARLTask(ABC):
     def set_obstacle_manager(self, manager: ObstaclesManager):
         assert type(manager) is ObstaclesManager
         if self.obstacles_manager is not None:
+            import traceback
+            import sys
+            print(self.obstacles_manager.ns)
+            traceback.print_stack(file=sys.stdout)
             warnings.warn(
                 "TaskManager was already initialized with a ObstaclesManager. "
                 "Current ObstaclesManager will be overwritten."
@@ -113,7 +117,6 @@ class RandomMARLTask(ABSMARLTask):
                             start_pos, goal_pos = manager.set_start_pos_goal_pos(
                                 forbidden_zones=starts
                             )
-                            print(goal_pos)
                             starts[robot_idx] = (
                                 start_pos.x,
                                 start_pos.y,
@@ -298,7 +301,6 @@ class CasesMARLTask(ABSMARLTask):
         self.ns = ns
         map_path = rospy.get_param("/world_path") if map_path == None else map_path
         map_path = '/'.join(map_path.split('/')[:-1])
-        print(map_path)
         self.ctm = ctm(f'{map_path}/grid.npy', num_active_tasks=int(rospy.get_param("/observable_task_goals")))
         with open(f"{map_path}/map.yaml", "r") as stream:
             try:
@@ -319,7 +321,7 @@ class CasesMARLTask(ABSMARLTask):
         )
         self.open_tasks = []
         self.goal_reached_subscriber = rospy.Subscriber(f"{self.ns}/goals", robot_goal, self.subscriber_goal_status)
-        self.goal_pos_publisher = rospy.Publisher(f"{self.ns}/open_tasks", robot_goal_list)
+        self.goal_pos_publisher = rospy.Publisher(f"{self.ns}/open_tasks", robot_goal_list, queue_size=1)
     
     def subscriber_goal_status(self, msg: robot_goal):
         action = msg.crate_action.action
@@ -346,7 +348,7 @@ class CasesMARLTask(ABSMARLTask):
             self.open_tasks = []
             for id, r_goal, crate_goal in zip(ids, robot_goals, crate_goals):
                 task = robot_goal(
-                    crate_action(crate_action.ASSIGN),
+                    crate_action(crate_action.ASSIGN, "publisher"),
                     id, self.ns,
                     '', '',
                     r_goal,
@@ -368,7 +370,7 @@ class CasesMARLTask(ABSMARLTask):
 
 
     def reset(self, robot_type: str):
-        print(f'{robot_type=}')
+        print(f'warehouse reset for {robot_type=}')
         assert robot_type in self.robot_manager, f"Unknown robot type: {robot_type},"
         f" robot has to be one of the following types: {self.robot_manager.keys()}"
 
@@ -415,7 +417,6 @@ class CasesMARLTask(ABSMARLTask):
                     self.obstacles_manager.reset_pos_obstacles_random(
                         forbidden_zones=starts + goals + crate_goals 
                     )
-                    print(starts + goals + crate_goals)
                     break
                 except rospy.ServiceException as e:
                     rospy.logwarn(repr(e))

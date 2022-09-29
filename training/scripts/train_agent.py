@@ -62,6 +62,20 @@ def main(args):
     sys.exit()
 
 
+# import sys
+# import traceback
+# class TracePrints(object):
+#   def __init__(self):    
+#     self.stdout = sys.stdout
+#   def write(self, s):
+#     self.stdout.write("Writing %r\n" % s)
+#     traceback.print_stack(file=self.stdout)
+#   def flush(self):
+#     pass
+
+
+# sys.stdout = TracePrints()
+
 if __name__ == "__main__":
     set_start_method("fork")
     args, _ = parse_training_args()

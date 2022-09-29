@@ -74,7 +74,7 @@ robots:
     resume: null
   # rto:
   #   # number of robots of this type
-  #   num_robots: 3
+  #   num_robots: 2
   #   # name of hyperparameter file located in the configs/hyperparameters directory
   #   hyperparameter_file: "rto.json"
   #   # name of architecture defined in the Policy factory

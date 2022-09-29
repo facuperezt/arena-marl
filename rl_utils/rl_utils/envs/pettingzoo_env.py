@@ -30,8 +30,10 @@ def env_fn(**kwargs: Dict[str, Any]):  # -> VecEnv:
     """
     env = FlatlandPettingZooEnv(**kwargs)
     env = from_parallel(env)
+    env = ss.agent_indicator_v0(env)
     env = ss.pad_action_space_v0(env)
     env = ss.pad_observations_v0(env)
+    env = ss.black_death_v3(env)
     env = to_parallel(env)
     env = MarkovVectorEnv_patched(env, black_death=True)
     return env
@@ -107,7 +109,6 @@ class FlatlandPettingZooEnv(ParallelEnv):
         rospy.set_param(
             f"{self._ns}training/{self.robot_model}/reset_mode", "reset_states"
         )  # "reset_states" or "get_obs"
-        print(f'{self._ns}goals')
         self.goal_publisher = rospy.Publisher(f'{self._ns}goals', robot_goal)
 
     def observation_space(self, agent: str) -> spaces.Box:

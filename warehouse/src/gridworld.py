@@ -263,9 +263,9 @@ class Map:
         #print('old grid', self.grid.shape)
         print('we are in random')
         if self.random_map:
-            self.shelf_rows = np.random.randint(1,5)*2 + 1
-            self.shelf_columns = np.random.randint(1,5)*2 + 1
-            self.column_height = np.random.randint(2,8)
+            self.shelf_rows = np.random.randint(1,3)*2 + 1
+            self.shelf_columns = np.random.randint(1,3)*2 + 1
+            self.column_height = np.random.randint(2,3)
             
             print(self.shelf_rows,  self.shelf_columns, self.column_height)
             self.make_gridworld()

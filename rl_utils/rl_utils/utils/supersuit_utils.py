@@ -47,7 +47,7 @@ class MarkovVectorEnv_patched(MarkovVectorEnv):
         observations = self.concat_obs(observations)
         assert (
             self.black_death or self.par_env.agents == self.par_env.possible_agents
-        ), "MarkovVectorEnv does not support environments with varying numbers of active agents unless black_death is set to True"
+        ), f"{self.black_death=}\nMarkovVectorEnv does not support environments with varying numbers of active agents unless black_death is set to True"
         return observations, rews, dns, infs
 
 
