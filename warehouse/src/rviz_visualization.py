@@ -17,7 +17,7 @@ from rospy_tutorials.msg import Floats
 from rospy.numpy_msg import numpy_msg
 
 from nav_msgs.msg import OccupancyGrid
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 from task_generator.msg import robot_goal, crate_action, robot_goal_list
 
 WALL_COLOR=(0,0,0)
@@ -26,7 +26,7 @@ OCCUPIED_SHELF_COLOR=(0,0,1)
 FREE_GOAL_COLOR =(1,0.5,0)
 OCCUPIED_GOAL_COLOR=(1,0,0)
 CRATE_COLOR=(0,1,0)
-path= '/home/patrick/catkin_ws/src/utils/arena-simulation-setup/maps/ignc/map.png'
+#path= '/home/patrick/catkin_ws/src/utils/arena-simulation-setup/maps/ignc/map.png'
 
 class Visualizer:
     def __init__(self, ns=1, yaml=None):
@@ -56,14 +56,10 @@ class Visualizer:
                            '5': FREE_SHELF_COLOR,
                            '6': OCCUPIED_SHELF_COLOR}
 
-        # subs for triggers
-        self._sub_next = rospy.Subscriber(
-            f"{self.ns_prefix}next_stage", Bool, self.next_stage
-        )
-        self._sub_previous = rospy.Subscriber(
-            f"{self.ns_prefix}previous_stage", Bool, self.previous_stage
-        )
-
+        # subs
+        self.open_tasks = rospy.Subscriber('eval_sim/open_tasks', robot_goal_list, self.goal_list_to_map)
+        self.switch_simulator = rospy.Subscriber('change_sim', String, self.switch_sim)
+    
         
     def goal_list_to_map(self, data):
         print('________goal list recieved_________')
@@ -82,40 +78,12 @@ class Visualizer:
         self.map = tmp_map
 
             
+    def switch_sim(self,string_msg):
+        data = string_msg.data
+        print('switch sim to ', data)
+        self.open_tasks = rospy.Subscriber(f'{data}/open_tasks', robot_goal_list, self.goal_list_to_map)
 
-    def next_stage(self, *args, **kwargs):
-        if self._curr_stage < len(self._stages):
-            self._curr_stage = self._curr_stage + 1
-            self._initiate_stage()
 
-            if self.ns == "eval_sim":
-                rospy.set_param("/curr_stage", self._curr_stage)
-                # if not rospy.get_param("debug_mode"):
-                #     with self._lock_json:
-                #         self._update_curr_stage_json()
-
-                if self._curr_stage == len(self._stages):
-                    rospy.set_param("/last_stage_reached", True)
-        else:
-            print(
-                f"({self.ns}) INFO: Tried to trigger next stage but already reached last one"
-            )
-
-    def previous_stage(self, *args, **kwargs):
-        if self._curr_stage > 1:
-            rospy.set_param("/last_stage_reached", False)
-
-            self._curr_stage = self._curr_stage - 1
-            self._initiate_stage()
-
-            if self.ns == "eval_sim":
-                rospy.set_param("/curr_stage", self._curr_stage)
-                with self._lock_json:
-                    self._update_curr_stage_json()
-        else:
-            print(
-                f"({self.ns}) INFO: Tried to trigger previous stage but already reached first one"
-            )
 
     def callback(self,data):
         w = data.info.width
@@ -175,8 +143,7 @@ class Visualizer:
         
         #Map Listener
         #Subscriber = rospy.Subscriber("gridworld", OccupancyGrid, self.callback)
-        open_tasks = rospy.Subscriber('eval_sim/open_tasks', robot_goal_list, self.goal_list_to_map)
-
+        
         #Marker Publisher
         topic = 'visualization_marker_array'
         publisher = rospy.Publisher(topic, MarkerArray, queue_size=1000)
