@@ -261,13 +261,20 @@ class Map:
     def new_episode_callback(self, msg: String):
         
         #print('old grid', self.grid.shape)
-        print('we are in random')
+        
+
         if self.random_map:
             self.shelf_rows = np.random.randint(1,5)*2 + 1
             self.shelf_columns = np.random.randint(1,5)*2 + 1
             self.column_height = np.random.randint(2,8)
             
-            print(self.shelf_rows,  self.shelf_columns, self.column_height)
+
+            print('WARNING: CALLBACK in gridworld.py')
+            print('New Map created with values')
+            print('shelf_rows ', self.shelf_rows)
+            print('shelf_cols ', self.shelf_columns)
+            print('col height ', self.column_height)
+
             self.make_gridworld()
             self.make_setup_folder()
             
@@ -279,14 +286,14 @@ class Map:
             print('new grid', self.grid.shape)
             print()
             # rospy.loginfo("New random map generated for episode {}.".format(self.nr))
-            self.mappub.publish(self.occupancy_grid)
+            #self.mappub.publish(self.occupancy_grid)
 
-            try:   
-                bashCommand = "rosservice call /move_base/clear_costmaps"
-                subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-                rospy.loginfo("New random map published and costmap cleared.")
-            except rospy.ROSException as e:
-                print(e)
+            #try:   
+            #    bashCommand = "rosservice call /move_base/clear_costmaps"
+            #    subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+            #    rospy.loginfo("New random map published and costmap cleared.")
+            #except rospy.ROSException as e:
+            #    print(e)
 
     def add_walls(self,grid):
         grid = np.pad(grid, pad_width=((1,1), (1,1)), mode='constant', constant_values=WALL) 
@@ -311,19 +318,27 @@ class Map:
             goal_col[w_half-1:w_half+1, 2] = FREE_GOAL
             self.grid = np.hstack([self.grid, goal_row])
 
+def str2bool(str):
+    if str=='True':
+        return True
+    elif str=='False':
+        return False
+    else:
+        print('Typing error in bigger_highways or rand_map. Only True or False allowed')
+        exit()
 
             
 
 
 import roslaunch
-from nav_msgs.msg import OccupancyGrid
+#from nav_msgs.msg import OccupancyGrid
 import time
 import sys
 
 if __name__ == '__main__':
     grid_args = sys.argv[1:8]
     shelf_cols, shelf_rows, col_height, scale  = [int(a.split(':=')[-1]) for a in grid_args[0:4]]
-    bigger_highways, rand_map = [bool(a.split(':=')[-1]) for a in grid_args[4:6]]
+    bigger_highways, rand_map = [str2bool(a.split(':=')[-1]) for a in grid_args[4:6]]
     additional_goals = grid_args[6]
 
 
@@ -338,7 +353,6 @@ if __name__ == '__main__':
                 )
 
     time.sleep(2)
-
     if sys.argv[-1].split(':=')[0]=='__log':
         if rand_map:
             msg = String()
@@ -356,8 +370,9 @@ if __name__ == '__main__':
         rospy.loginfo("started")
 
 
-        while not rospy.is_shutdown():
-            grid.gridpub.publish(grid.create_gridworld_message())
+        #while not rospy.is_shutdown():
+        #    import ipdb
+        #    grid.gridpub.publish(grid.create_gridworld_message())
         rospy.spin()
             
 
