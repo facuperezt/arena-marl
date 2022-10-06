@@ -60,6 +60,8 @@ class Map:
             self.mappub = rospy.Publisher('/map', OccupancyGrid, queue_size=1)
         else:
             self.make_gridworld()
+            self.y_origin = 0 #- 4
+            self.x_origin = 0 #- self.grid.shape[1]/2
             self.make_setup_folder()
             self.gridpub.publish(self.create_gridworld_message())
         
@@ -93,11 +95,10 @@ class Map:
 
             os.mkdir(setup_pth)
 
-        y_origin = - 4
-        x_origin = - self.grid.shape[1]/2
+
         map_world_yaml = {'properties': {'velocity_iterations': 10, 'position_iterations': 10},
                     'layers': [{'name': 'static', 'map': 'map.yaml', 'color': [0, 1, 0, 1]}]}
-        map_yaml = {'image': 'map.png', 'resolution': 0.01, 'origin': [x_origin, y_origin, 0.0],
+        map_yaml = {'image': 'map.png', 'resolution': 0.01, 'origin': [self.x_origin, self.y_origin, 0.0],
                     'negate': 0, 'occupied_thresh': 0.65, 'free_thresh': 0.196}    
 
         
