@@ -7,6 +7,7 @@ from typing import List, Dict, Union, Literal, TypedDict, Any
 from task_generator.task_generator.robot_manager import RobotManager
 from geometry_msgs.msg import Pose2D
 from actionlib_msgs.msg import GoalStatusArray, GoalStatus, GoalID
+import random
 #%%
 
 
@@ -111,6 +112,23 @@ class CaseTaskManager():
 
         return True
 
+    def _generate_s2s_task(self):
+        goal = self._get_random_quadrant_of_type(FREE_SHELF).squeeze()
+        if not goal.size > 0:
+            print('WARNING: The goal is occupied!')
+            goal = self._get_random_quadrant_of_type(OCCUPIED_SHELF).squeeze()
+        
+        while True:
+            crate_location = self._get_random_quadrant_of_type(OCCUPIED_SHELF)
+            if goal != crate_location: break
+        
+        self._occupy_quadrant(crate_location, goal, spawn_crate= True)
+
+        crate = self.active_crates.get_crate_at_location(crate_location)
+        crate.set_new_goal(goal)
+
+        return True
+
     def _generate_manual_task(self, starting_point: np.ndarray, goal: np.ndarray):
         if self.g[starting_point] not in [OCCUPIED_GOAL, OCCUPIED_SHELF]:
             print('No crate at starting_point. No task was generated.')
@@ -142,6 +160,8 @@ class CaseTaskManager():
             return self._generate_pack_task()            
         elif type == 'unpack':
             return self._generate_unpack_task(kwargs.get('force_free_goal', True))
+        elif type == 'shelf2shelf':
+            return self._generate_s2s_task()
         elif type == 'manual':
             return self._generate_manual_task(kwargs.get('starting_point'), kwargs.get('goal')) # passed argument like this, because this is meant to only be used explicitly.
         else:
@@ -206,12 +226,12 @@ class CaseTaskManager():
         if reset:
             self.reset()
         if type == 'random':
-            tasks = {True: 'pack', False: 'unpack'}
+            tasks = {0: 'pack', 1: 'unpack', 2: 'shelf2shelf'}
 
             generated_tasks = 0
             while generated_tasks < nr_tasks:
                 free_goals = self._find(FREE_GOAL)
-                task_type = free_goals.shape[0] > 1
+                task_type = random.randint(0,2)
                 success = self.generate_new_task(tasks[task_type])
                 generated_tasks += 1
                 
