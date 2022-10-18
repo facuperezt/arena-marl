@@ -123,7 +123,7 @@ class Map:
     def upscale_grid(self,grid, n = 1):
         grid = np.kron(grid, np.ones((n,n)))
 
-        return grid
+        return np.flip(grid, 0)
 
     def make_rware(self,shelf_columns, shelf_rows, column_height):
         '''Implementation of the warehouse from rware
