@@ -2,6 +2,8 @@ import math
 import numpy as np
 from nav_msgs.msg import OccupancyGrid
 import random
+import torch
+from typing import Tuple
 
 
 def generate_freespace_indices(map_: OccupancyGrid) -> tuple:
@@ -85,3 +87,32 @@ def get_random_pos_on_map(free_space_indices, map_: OccupancyGrid, safe_dist: fl
     theta = random.uniform(-math.pi, math.pi)
 
     return x_in_meters, y_in_meters, theta
+
+def unravel_index(
+    indices: torch.LongTensor,
+    shape: Tuple[int, ...],
+) -> torch.LongTensor:
+    r"""Converts flat indices into unraveled coordinates in a target shape.
+
+    This is a `torch` implementation of `numpy.unravel_index`.
+
+    Args:
+        indices: A tensor of indices, (*, N).
+        shape: The targeted shape, (D,).
+
+    Returns:
+        unravel coordinates, (*, N, D).
+    """
+
+    shape = torch.tensor(shape)
+    indices = indices % shape.prod()  # prevent out-of-bounds indices
+
+    coord = torch.zeros(indices.size() + shape.size(), dtype=int)
+
+    for i, dim in enumerate(reversed(shape)):
+        coord[..., i] = indices % dim
+        indices = indices // dim
+
+    return coord.flip(-1)
+
+
