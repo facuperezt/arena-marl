@@ -21,7 +21,8 @@ from geometry_msgs.msg import Pose2D
 
 from .obstacles_manager import ObstaclesManager
 from .robot_manager import RobotManager
-from .utils import get_random_pos_on_map
+from .utils import get_random_pos_on_map, unravel_index
+import torch
 
 class ABSMARLTask(ABC):
     """An abstract class for the DRL agent navigation tasks."""
@@ -366,6 +367,47 @@ class CasesMARLTask(ABSMARLTask):
         self._num_robots = count_robots(self.robot_manager)
         self.reset_flag = {key: False for key in self.robot_manager.keys()}
 
+    def list_robots(self):
+        robots_managers_list = []
+        for robot_type, robot_managers in self.robot_manager:
+            for robot_manager in robot_managers:
+                robots_managers_list.append(robot_manager)
+        return robots_managers_list
+
+    def assign_goal_to_robots(self, use_velocities= False):
+        robot_managers = self.list_robots()
+        odoms = torch.rand(2*self._num_robots).reshape(-1, 2) # TODO get robot odoms
+        _velocities = torch.rand(self._num_robots) # TODO get robot velocities
+        velocities = _velocities if use_velocities else None
+        crate_ids, crate_locations, crate_goals = self.ctm.get_open_tasks()
+
+        chosen = self.order_goal_for_robots(odoms, crate_locations, velocities)
+
+        for robot, chosen_goal in zip(robot_managers, chosen):
+            robot: RobotManager
+            if robot.has_crate: continue
+            chosen_location = crate_locations[chosen_goal]
+            robot.publish_goal(chosen_location.x, chosen_location.y, chosen_location.theta)
+    
+    def order_goal_for_robots(self, odoms, goals, velocities= None):
+        """
+        returns list where for each element: index represents robot index - value represents goal index
+        """
+        dists = torch.cdist(odoms, goals, p= 2)
+        if velocities is not None:
+            dists /= velocities
+        prefs = torch.argmin(dists, dim= 1)
+        chosen = []
+        for i, pref in enumerate(prefs):
+            candidate = None
+            for p in pref:
+                if p not in chosen:
+                    candidate = p
+                    break
+            chosen.append(candidate)
+
+        return chosen
+
 
     def reset(self, robot_type: str):
         print(f'{robot_type=}')
@@ -566,3 +608,5 @@ def init_obstacle_manager(n_envs, mode: str = "train"):
         raise ValueError("mode must be either 'train' or 'eval'")
 
 
+
+# %%
